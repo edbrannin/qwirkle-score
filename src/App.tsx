@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { FormEvent, useRef } from 'react';
 import './App.css'
 import useGame, { scoreValues } from './useGame'
 import usePlayers from './usePlayers'
@@ -9,7 +9,8 @@ function App() {
     resetScores,
     getTotalScore,
     scores,
-    events,
+    recentEvents,
+    undoEvent,
   } = useGame();
 
   const {
@@ -18,7 +19,7 @@ function App() {
   
   const nameRef = useRef<HTMLInputElement>(null);
 
-  const addPlayerFromInput = (e: Event) => {
+  const addPlayerFromInput = (e: FormEvent<HTMLFormElement>) => {
     const newName = nameRef.current?.value;
     if (newName) {
       addPlayer(newName);
@@ -26,6 +27,9 @@ function App() {
     }
     e.preventDefault();
   }
+
+  const { events, startIndex: eventStartIndex, eventCount } = recentEvents(10);
+  const showEvents = eventCount > 0;
 
   return (
     <>
@@ -74,12 +78,15 @@ function App() {
         </tfoot>
       </table>
 
-      {events.length === 0 ? null : (
+      {showEvents && (
         <div>
           <h2>Recent Events</h2>
-          <ol start={Math.max(events.length - 10, 1)}>
-            {events.slice(Math.max(events.length - 10, 0)).map((event, i) => (
-              <li key={i}>{event.name} gets {event.points}</li>
+          <ol start={eventStartIndex}>
+            {events.map((event, i) => (
+              <li key={i}>
+                {event.undo && 'UNDO:'} {event.name} gets {event.points}
+                <button onClick={() => undoEvent(event)}>Undo</button>
+              </li>
             ))}
           </ol>
         </div>

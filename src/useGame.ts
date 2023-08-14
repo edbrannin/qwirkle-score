@@ -9,10 +9,11 @@ export const scoreValues: ScoreValue[] = [
 
 type GameEvent = {
   name: string;
-  points: number;
+  points: ScoreValue;
+  undo: boolean;
 }
 
-const useGame = (eventCap = 10) => {
+const useGame = () => {
   const [scores, setScores] = useState<Record<string, ScoreTally>>({});
   const [events, setEvents] = useState<GameEvent[]>([]);
 
@@ -23,12 +24,34 @@ const useGame = (eventCap = 10) => {
       ...events,
       event,
     ])
-    // trimEvents();
+  }
+
+  const recentEvents = (maxCount: 10) => {
+    const eventCount = Math.min(maxCount, events.length);
+    const startIndex = events.length - eventCount;
+    return {
+      events: events.slice(startIndex),
+      eventCount,
+      startIndex,
+    };
+  }
+
+  const undoEvent = (toUndo: GameEvent) => {
+    setEvents(events.filter(e => e !== toUndo));
+    addEvent({... toUndo, undo: true })
+    const currentScores = scores[toUndo.name] ?? {};
+    setScores({
+      ...scores,
+      [toUndo.name]: {
+        ...currentScores,
+        [toUndo.points]: currentScores[toUndo.points] - 1,
+      }
+    })
   }
 
   const addScore = (name: string, value: ScoreValue) => {
     const currentScores = scores[name] ?? {};
-    addEvent({ name, points: value });
+    addEvent({ name, points: value, undo: false });
     setScores({
       ...scores,
       [name]: {
@@ -51,6 +74,8 @@ const useGame = (eventCap = 10) => {
   return {
     scores,
     events,
+    recentEvents,
+    undoEvent,
     addScore,
     resetScores,
     getTotalScore,
